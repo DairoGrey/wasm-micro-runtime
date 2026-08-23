@@ -1603,7 +1603,7 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
     uint32 cache_index, type_index, param_cell_num, cell_num;
 
 #if WASM_ENABLE_INSTRUCTION_METERING != 0
-    int instructions_left = -1;
+    int64 instructions_left = -1;
     if (exec_env) {
         instructions_left = exec_env->instructions_to_execute;
     }
@@ -6849,6 +6849,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
         if (!prev_frame->ip) {
             /* Called from native. */
+#if WASM_ENABLE_INSTRUCTION_METERING != 0
+            exec_env->instructions_to_execute = instructions_left;
+#endif
             return;
         }
 
@@ -6887,6 +6890,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
         }
 #endif
         SYNC_ALL_TO_FRAME();
+#if WASM_ENABLE_INSTRUCTION_METERING != 0
+        exec_env->instructions_to_execute = instructions_left;
+#endif
         return;
 
 #if WASM_ENABLE_LABELS_AS_VALUES == 0

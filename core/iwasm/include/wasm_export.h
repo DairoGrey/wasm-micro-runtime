@@ -1877,6 +1877,27 @@ wasm_runtime_set_instruction_count_limit(wasm_exec_env_t exec_env,
                                          int instruction_count);
 
 /**
+ * Set a 64-bit instruction count limit to the execution environment.
+ * This preserves instruction metering for pipelines whose finite work exceeds
+ * the range of the legacy int-sized API.
+ *
+ * @param exec_env the execution environment
+ * @param instruction_count the instruction count limit
+ */
+WASM_RUNTIME_API_EXTERN void
+wasm_runtime_set_instruction_count_limit64(wasm_exec_env_t exec_env,
+                                           int64_t instruction_count);
+
+/**
+ * Return the remaining 64-bit instruction allowance for the execution
+ * environment. A negative result means that instruction metering is disabled.
+ *
+ * @param exec_env the execution environment
+ */
+WASM_RUNTIME_API_EXTERN int64_t
+wasm_runtime_get_instruction_count_remaining64(wasm_exec_env_t exec_env);
+
+/**
  * Dump runtime memory consumption, including:
  *     Exec env memory consumption
  *     WASM module memory consumption

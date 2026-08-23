@@ -1540,7 +1540,7 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
     uint8 opcode = 0, local_type, *global_addr;
 
 #if WASM_ENABLE_INSTRUCTION_METERING != 0
-    int instructions_left = -1;
+    int64 instructions_left = -1;
     if (exec_env) {
         instructions_left = exec_env->instructions_to_execute;
     }
@@ -7787,9 +7787,13 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
         FREE_FRAME(exec_env, frame);
         wasm_exec_env_set_cur_frame(exec_env, (WASMRuntimeFrame *)prev_frame);
 
-        if (!prev_frame->ip)
+        if (!prev_frame->ip) {
             /* Called from native. */
+#if WASM_ENABLE_INSTRUCTION_METERING != 0
+            exec_env->instructions_to_execute = instructions_left;
+#endif
             return;
+        }
 
         RECOVER_CONTEXT(prev_frame);
 #if WASM_ENABLE_GC != 0
@@ -7815,6 +7819,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
     got_exception:
         SYNC_ALL_TO_FRAME();
+#if WASM_ENABLE_INSTRUCTION_METERING != 0
+        if (exec_env)
+            exec_env->instructions_to_execute = instructions_left;
+#endif
         return;
 
 #if WASM_ENABLE_LABELS_AS_VALUES == 0
