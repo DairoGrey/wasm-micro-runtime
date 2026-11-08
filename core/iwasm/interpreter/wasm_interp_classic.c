@@ -4607,14 +4607,12 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
 
 #if WASM_ENABLE_MEMORY64 != 0
                 if (is_memory64) {
-                    PUT_I64_TO_ADDR((mem_offset_t *)maddr,
-                                    GET_I64_FROM_ADDR(frame_sp + 2));
+                    STORE_I64(maddr, GET_I64_FROM_ADDR(frame_sp + 2));
                 }
                 else
 #endif
                 {
-                    PUT_I64_TO_ADDR((uint32 *)maddr,
-                                    GET_I64_FROM_ADDR(frame_sp + 1));
+                    STORE_I64(maddr, GET_I64_FROM_ADDR(frame_sp + 1));
                 }
                 CHECK_WRITE_WATCHPOINT(addr, offset);
                 HANDLE_OP_END();
@@ -6769,7 +6767,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
             cell_num_of_local_stack = cur_func->param_cell_num
                                       + cur_func->local_cell_num
                                       + max_stack_cell_num;
-            all_cell_num = cell_num_of_local_stack
+            /* The label stack contains native pointers, whereas Wasm cells
+               are only four bytes. Reserve the padding before placing it. */
+            all_cell_num = align_uint(cell_num_of_local_stack, sizeof(void *) / 4)
                            + cur_wasm_func->max_block_num
                                  * (uint32)sizeof(WASMBranchBlock) / 4;
 #if WASM_ENABLE_GC != 0
@@ -6799,7 +6799,8 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
             frame->sp_boundary = frame->sp_bottom + max_stack_cell_num;
 
             frame_csp = frame->csp_bottom =
-                (WASMBranchBlock *)frame->sp_boundary;
+                (WASMBranchBlock *)(frame_lp
+                    + align_uint(cell_num_of_local_stack, sizeof(void *) / 4));
             frame->csp_boundary =
                 frame->csp_bottom + cur_wasm_func->max_block_num;
 
